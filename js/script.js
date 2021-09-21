@@ -1,145 +1,79 @@
+"use strict"
 
-let wrapper = document.querySelector('.wrapper');
+// Ждем загрузку контента
+window.onload = function () {
+	const parallax = document.querySelector('.parallax');
 
-let pageSlider = new Swiper('.page', {
-	// Свои классы
-	wrapperClass: "page__wrapper",
-	slideClass: "page__screen",
+	if (parallax) {
+		const content = document.querySelector('.parallax__container');
+		const clouds = document.querySelector('.images-parallax__clouds');
+		const mountains = document.querySelector('.images-parallax__mountains');
+		const human = document.querySelector('.images-parallax__human');
 
-	// Вертикальный слайдер
-	direction: 'vertical',
+		// Коэффициенты
+		const forClouds = 40;
+		const forMountains = 20;
+		const forHuman = 10;
 
-	// Количество слайдов для показа
-	slidesPerView: 'auto',
+		// Скорость анимации
+		const speed = 0.05;
 
-	// Включаем параллакс
-	parallax: true,
+		// Объявление переменных
+		let positionX = 0, positionY = 0;
+		let coordXprocent = 0, coordYprocent = 0;
 
+		function setMouseParallaxStyle() {
+			const distX = coordXprocent - positionX;
+			const distY = coordYprocent - positionY;
 
-	// Управление клавиатурой
-	keyboard: {
-		// Включить\выключить
-		enabled: true,
-		// Включить\выключить
-		// только когда слайдер
-		// в пределах вьюпорта
-		onlyInViewport: true,
-		// Включить\выключить
-		// управление клавишами
-		// pageUp, pageDown
-		pageUpDown: true,
-	},
+			positionX = positionX + (distX * speed);
+			positionY = positionY + (distY * speed);
 
-	// Управление колесом мыши
-	mousewheel: {
-		// Чувствительность колеса мыши
-		sensitivity: 1,
-		// Класс объекта на котором
-		// будет срабатывать прокрутка мышью.
-		//eventsTarget: ".image-slider"
-	},
+			// Передаем стили
+			clouds.style.cssText = `transform: translate(${positionX / forClouds}%,${positionY / forClouds}%);`;
+			mountains.style.cssText = `transform: translate(${positionX / forMountains}%,${positionY / forMountains}%);`;
+			human.style.cssText = `transform: translate(${positionX / forHuman}%,${positionY / forHuman}%);`;
 
-	// Отключение функционала
-	// если слайдов меньше чем нужно
-	watchOverflow: true,
-
-	// Скорость
-	speed: 800,
-
-	// Обновить свайпер
-	// при изменении элементов слайдера
-	observer: true,
-
-	// Обновить свайпер
-	// при изменении родительских
-	// элементов слайдера
-	observeParents: true,
-
-	// Обновить свайпер
-	// при изменении дочерних
-	// элементов слайда
-	observeSlideChildren: true,
-
-	// Навигация 
-	// Буллеты, текущее положение, прогрессбар
-	pagination: {
-		el: '.page__pagination',
-		type: 'bullets',
-		clickable: true,
-		bulletClass: "page__bullet",
-		bulletActiveClass: "page__bullet_active",
-	},
-	// Скролл
-	scrollbar: {
-		el: '.page__scroll',
-		dragClass: "page__drag-scroll",
-		// Возможность перетаскивать скролл
-		draggable: true
-	},
-
-	// Отключаем автоинициализацию
-	init: false,
-
-	// События
-	on: {
-		// Событие инициализации
-		init: function () {
-			menuSlider();
-			setScrollType();
-			wrapper.classList.add('_loaded');
-		},
-		// Событие смены слайда
-		slideChange: function () {
-			menuSliderRemove();
-			menuLinks[pageSlider.realIndex].classList.add('_active');
-		},
-		resize: function () {
-			setScrollType();
+			requestAnimationFrame(setMouseParallaxStyle);
 		}
-	},
-});
+		setMouseParallaxStyle();
 
-let menuLinks = document.querySelectorAll('.menu__link');
+		parallax.addEventListener("mousemove", function (e) {
+			// Получение ширины и высоты блока
+			const parallaxWidth = parallax.offsetWidth;
+			const parallaxHeight = parallax.offsetHeight;
 
-function menuSlider() {
-	if (menuLinks.length > 0) {
-		menuLinks[pageSlider.realIndex].classList.add('_active');
-		for (let index = 0; index < menuLinks.length; index++) {
-			const menuLink = menuLinks[index];
-			menuLink.addEventListener("click", function (e) {
-				menuSliderRemove();
-				pageSlider.slideTo(index, 800);
-				menuLink.classList.add('_active');
-				e.preventDefault();
-			});
+			// Ноль по середине
+			const coordX = e.pageX - parallaxWidth / 2;
+			const coordY = e.pageY - parallaxHeight / 2;
+
+			// Получаем проценты
+			coordXprocent = coordX / parallaxWidth * 100;
+			coordYprocent = coordY / parallaxHeight * 100;
+		});
+
+		// Parallax при скролле
+
+		let thresholdSets = [];
+		for (let i = 0; i <= 1.0; i += 0.005) {
+			thresholdSets.push(i);
 		}
+		const callback = function (entries, observer) {
+			const scrollTopProcent = window.pageYOffset / parallax.offsetHeight * 100;
+			setParallaxItemsStyle(scrollTopProcent);
+		};
+		const observer = new IntersectionObserver(callback, {
+			threshold: thresholdSets
+		});
+
+		observer.observe(document.querySelector('.content'));
+
+		function setParallaxItemsStyle(scrollTopProcent) {
+			content.style.cssText = `transform: translate(0%,-${scrollTopProcent / 9}%);`;
+			mountains.parentElement.style.cssText = `transform: translate(0%,-${scrollTopProcent / 6}%);`;
+			human.parentElement.style.cssText = `transform: translate(0%,-${scrollTopProcent / 3}%);`;
+		}
+
+
 	}
 }
-
-function menuSliderRemove() {
-	let menuLinkActive = document.querySelector('.menu__link._active');
-	if (menuLinkActive) {
-		menuLinkActive.classList.remove('_active');
-	}
-}
-
-function setScrollType() {
-	if (wrapper.classList.contains('_free')) {
-		wrapper.classList.remove('_free');
-		pageSlider.params.freeMode = false;
-	}
-	for (let index = 0; index < pageSlider.slides.length; index++) {
-		const pageSlide = pageSlider.slides[index];
-		const pageSlideContent = pageSlide.querySelector('.screen__content');
-		if (pageSlideContent) {
-			const pageSlideContentHeight = pageSlideContent.offsetHeight;
-			if (pageSlideContentHeight > window.innerHeight) {
-				wrapper.classList.add('_free');
-				pageSlider.params.freeMode = true;
-				break;
-			}
-		}
-	}
-}
-
-pageSlider.init();
